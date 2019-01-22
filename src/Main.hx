@@ -20,7 +20,7 @@ class Main {
 	static var index = new List<FileMeta>();
 	
 	static function main() {
-		Bio.Header("godotdec", "1.0.0", "A simple unpacker for Godot Engine package files (.pck)", "<input_file> [<output_dir>]");
+		Bio.Header("godotdec", "1.0.0", "2018", "A simple unpacker for Godot Engine package files (.pck)", "<input_file> [<output_dir>]");
 		Bio.Seperator();
 		
 		var args = Sys.args();
