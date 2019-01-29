@@ -31,5 +31,8 @@ The source code of the .pck packer can be found [here](https://github.com/godote
 - MD5 checksum is not used to verify extracted files
 
 ### Remarks
+No reverse engineering has been used to write this tool.
+
+I released it as a helper for artists to search games for unlicensed use of their assets. It is not meant to encourage extraction with the sole purpose of using assets in your own products without permission of the copyright holder.
 
 Remember: don't steal assets from other people's games. Respect copyrights. And don't protect your own games - it's unnecessary effort.
