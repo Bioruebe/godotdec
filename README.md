@@ -3,9 +3,16 @@
 A simple unpacker for Godot Engine package files (.pck)
 
 ### Usage
-`godotdec <input_file> [<output_dir>]`
+`godotdec [<options>] <input_file> [<output_dir>]`
+
+###### Options:
+
+| Flag (short) | Flag (long) | Description                                                  |
+| ------------ | ----------- | ------------------------------------------------------------ |
+| -c           | --convert   | Convert certain engine-specific file types (textures, some audio streams) to standard formats. |
 
 ### Technical details
+
 Godot Engine's package format is specified as:
 
 | Value/Type | Description                                                  |
@@ -27,8 +34,8 @@ The source code of the .pck packer can be found [here](https://github.com/godote
 ### Limitations
 
 - Modified engine versions may use a custom package format, which godotdec does not support
-- Very big files might not be unpacked correctly, but that's untested for now
 - MD5 checksum is not used to verify extracted files
+- Format conversion is only supported for .png, .ogg
 
 ### Remarks
 

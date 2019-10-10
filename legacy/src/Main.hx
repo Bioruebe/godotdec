@@ -24,6 +24,7 @@ class Main {
 		Bio.Seperator();
 		
 		var args = Sys.args();
+		args.push("Z:\\Documents\\Software\\JDownloader 2\\Downloads\\polyle\\2019z06225\\sluttyravegirl.pck");
 		if (args.length < 1) Bio.Error("Please specify the path to a .pck file.", 1);
 		
 		var pck = args[0];
@@ -73,9 +74,16 @@ class Main {
 				index.add(f);
 			}
 			catch (eof:Eof){
+				Bio.Debug("End of file");
 				break;
 			}
+			catch (e: Dynamic) {
+				Bio.Error(e);
+				continue;
+			}
 		}
+		
+		Bio.PrintList(index);
 	}
 	
 	static function readInt64() {
@@ -85,6 +93,7 @@ class Main {
 	
 	static function findFileEntry():FileMeta {
 		var pos = file.tell();
+		Bio.Debug(pos);
 		return index.find(function (el) {
 			return el.offset.compare(pos) == 0;
 		});

@@ -1,1 +1,4 @@
-/bin
+/godotdec/bin
+/legacy/bin
+/godotdec/obj
+/.vs
