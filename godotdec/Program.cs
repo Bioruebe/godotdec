@@ -1,34 +1,28 @@
-﻿using System;
+﻿using BioLib;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using cicdec;
 
 namespace godotdec {
 	class Program {
-		static void Main(string[] aArgs) {
-			Bio.Header("godotdec", "2.0.0", "2018-2019", "A simple unpacker for Godot Engine package files (.pck|.exe)",
+		private const int MAGIC = 0x43504447;
+
+		private static string inputFile;
+		private static string outputDirectory;
+		private static bool convertAssets;
+
+		static void Main(string[] args) {
+			Bio.Header("godotdec", "2.1.0", "2018-2020", "A simple unpacker for Godot Engine package files (.pck|.exe)",
 				"[<options>] <input_file> [<output_directory>]\n\nOptions:\n-c\t--convert\tConvert textures and audio files");
 
-			var args = aArgs.ToList();
-			
-			if (args.Contains("-h") || args.Contains("--help") || args.Contains("/?") || args.Contains("-?") ||
-				args.Contains("/h")) return;
-
-			var convert = args.Remove("--convert") || args.Remove("-c");
-			if (args.Count < 1) Bio.Error("Please specify the path to a Godot .pck or .exe file.", 1);
-
-			var inputFile = args[0];
-			if (!File.Exists(inputFile)) Bio.Error("The input file " + inputFile + " does not exist.", 1);
-			var outdir = args.Count > 1? args[1]: Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile));
-			Bio.Debug("Input file: " + inputFile);
-			Bio.Debug("Output directory: " + outdir);
+			if (Bio.HasCommandlineSwitchHelp(args)) return;
+			ParseCommandLine(args.ToList());
 
 			var failed = 0;
 			using (var inputStream = new BinaryReader(File.Open(inputFile, FileMode.Open))) {
-				if (inputStream.ReadInt32() != 0x43504447) {
+				if (inputStream.ReadInt32() != MAGIC) {
 					inputStream.BaseStream.Seek(-4, SeekOrigin.End);
 
 					CheckMagic(inputStream.ReadInt32());
@@ -60,13 +54,13 @@ namespace godotdec {
 					//break;
 				}
 
-				if (fileIndex.Count < 1) Bio.Error("No files were found inside the archive", 2);
+				if (fileIndex.Count < 1) Bio.Error("No files were found inside the archive", Bio.EXITCODE.RUNTIME_ERROR);
 				fileIndex.Sort((a, b) => (int) (a.offset - b.offset));
 
 				var fileIndexEnd = inputStream.BaseStream.Position;
 				for (var i = 0; i < fileIndex.Count; i++) {
 					var fileEntry = fileIndex[i];
-					Bio.Cout($"{i+1}/{fileIndex.Count}\t{fileEntry.path}");
+					Bio.Progress(fileEntry.path, i+1, fileIndex.Count);
 					//break;
 					if (fileEntry.offset < fileIndexEnd) {
 						Bio.Warn("Invalid file offset: " + fileEntry.offset);
@@ -74,7 +68,7 @@ namespace godotdec {
 					}
 
 					// TODO: Only PNG compression is supported
-					if (convert) {
+					if (convertAssets) {
 						// https://github.com/godotengine/godot/blob/master/editor/import/resource_importer_texture.cpp#L222
 						if (fileEntry.path.EndsWith(".stex") && fileEntry.path.Contains(".png")) {
 							fileEntry.Resize(32);
@@ -89,17 +83,20 @@ namespace godotdec {
 						// https://github.com/godotengine/godot/blob/master/scene/resources/audio_stream_sample.cpp#L518
 						else if (fileEntry.path.EndsWith(".sample")) {
 							// TODO
+							Bio.Warn("The file type '.sample' is currently not supported");
 						}
 					}
 
-					var destination = Path.Combine(outdir, Bio.FileReplaceInvalidChars(fileEntry.path));
+					var destination = Path.Combine(outputDirectory, fileEntry.path);
+					destination = Bio.EnsureFileDoesNotExist(destination, "godotdec_overwrite");
 					inputStream.BaseStream.Seek(fileEntry.offset, SeekOrigin.Begin);
+					if (destination == null) continue;
 
 					try {
 						var fileMode = FileMode.CreateNew;
 						Directory.CreateDirectory(Path.GetDirectoryName(destination));
+						
 						if (File.Exists(destination)) {
-							if (!Bio.Prompt($"The file {fileEntry.path} already exists. Overwrite?", "godotdec_overwrite")) continue;
 							fileMode = FileMode.Create;
 						}
 						using (var outputStream = new FileStream(destination, fileMode)) {
@@ -113,13 +110,27 @@ namespace godotdec {
 				}
 			}
 
+			Bio.Cout();
 			Bio.Cout(failed < 1? "All OK": failed + " files failed to extract");
 			Bio.Pause();
 		}
 
+		static void ParseCommandLine(List<string> args) {
+			convertAssets = args.Remove("--convert") || args.Remove("-c");
+			if (args.Count < 1) Bio.Error("Please specify the path to a Godot .pck or .exe file.", Bio.EXITCODE.INVALID_INPUT);
+
+			inputFile = args[0];
+			if (!File.Exists(inputFile)) Bio.Error("The input file " + inputFile + " does not exist. Please make sure the path is correct.", Bio.EXITCODE.IO_ERROR);
+			
+			outputDirectory = args.Count > 1? args[1]: Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileNameWithoutExtension(inputFile));
+
+			Bio.Debug("Input file: " + inputFile);
+			Bio.Debug("Output directory: " + outputDirectory);
+		}
+
 		static void CheckMagic(int magic) {
-			if (magic == 0x43504447) return;
-			Bio.Error("The input file is not a valid Godot package file.", 2);
+			if (magic == MAGIC) return;
+			Bio.Error("The input file is not a valid Godot package file.", Bio.EXITCODE.INVALID_INPUT);
 		}
 	}
 }
