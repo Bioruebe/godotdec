@@ -1,6 +1,6 @@
 # godotdec
 
-A simple unpacker for Godot Engine package files (.pck)
+An unpacker for Godot Engine package files (.pck)
 
 ### Usage
 `godotdec [<options>] <input_file> [<output_dir>]`
@@ -33,11 +33,13 @@ The source code of the .pck packer can be found [here](https://github.com/godote
 
 ### Limitations
 
-- Modified engine versions may use a custom package format, which godotdec does not support
+- This tool is designed to extract assets. If you are interested in the scripts of a game, check out [Godot RE Tools](https://github.com/bruvzg/gdsdecomp)
 - MD5 checksum is not used to verify extracted files
 - Format conversion is only supported for .png, .ogg
+- Modified engine versions may use a custom package format, which godotdec does not support
 
 ### Remarks
+
 No reverse engineering has been used to write this tool.
 
 I released it as a helper for artists to search games for unlicensed use of their assets. It is not meant to encourage extraction with the sole purpose of using assets in your own products without permission of the copyright holder.
