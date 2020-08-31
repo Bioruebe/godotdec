@@ -1,4 +1,5 @@
 ﻿using BioLib;
+using BioLib.Streams;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,6 +8,8 @@ using System.Text;
 
 namespace godotdec {
 	class Program {
+		private const string VERSION = "2.1.1";
+		private const string PROMPT_ID = "godotdec_overwrite";
 		private const int MAGIC = 0x43504447;
 
 		private static string inputFile;
@@ -14,7 +17,7 @@ namespace godotdec {
 		private static bool convertAssets;
 
 		static void Main(string[] args) {
-			Bio.Header("godotdec", "2.1.0", "2018-2020", "A simple unpacker for Godot Engine package files (.pck|.exe)",
+			Bio.Header("godotdec", VERSION, "2018-2020", "A simple unpacker for Godot Engine package files (.pck|.exe)",
 				"[<options>] <input_file> [<output_directory>]\n\nOptions:\n-c\t--convert\tConvert textures and audio files");
 
 			if (Bio.HasCommandlineSwitchHelp(args)) return;
@@ -27,9 +30,9 @@ namespace godotdec {
 
 					CheckMagic(inputStream.ReadInt32());
 
-					inputStream.BaseStream.Seek(-12, SeekOrigin.Current);
+					inputStream.BaseStream.Skip(-12);
 					var offset = inputStream.ReadInt64();
-					inputStream.BaseStream.Seek(-offset - 8, SeekOrigin.Current);
+					inputStream.BaseStream.Skip(-offset - 8);
 
 					CheckMagic(inputStream.ReadInt32());
 				}
@@ -37,7 +40,7 @@ namespace godotdec {
 				Bio.Cout($"Godot Engine version: {inputStream.ReadInt32()}.{inputStream.ReadInt32()}.{inputStream.ReadInt32()}.{inputStream.ReadInt32()}");
 
 				// Skip reserved bytes (16x Int32)
-				inputStream.BaseStream.Seek(16 * 4, SeekOrigin.Current);
+				inputStream.BaseStream.Skip(16 * 4);
 
 				var fileCount = inputStream.ReadInt32();
 				Bio.Cout($"Found {fileCount} files in package");
@@ -50,7 +53,7 @@ namespace godotdec {
 					var fileEntry = new FileEntry(path.ToString(), inputStream.ReadInt64(), inputStream.ReadInt64());
 					fileIndex.Add(fileEntry);
 					Bio.Debug(fileEntry);
-					inputStream.BaseStream.Seek(16, SeekOrigin.Current);
+					inputStream.BaseStream.Skip(16);
 					//break;
 				}
 
@@ -87,21 +90,12 @@ namespace godotdec {
 						}
 					}
 
+					inputStream.BaseStream.Position = fileEntry.offset;
 					var destination = Path.Combine(outputDirectory, fileEntry.path);
-					destination = Bio.EnsureFileDoesNotExist(destination, "godotdec_overwrite");
-					inputStream.BaseStream.Seek(fileEntry.offset, SeekOrigin.Begin);
-					if (destination == null) continue;
 
 					try {
-						var fileMode = FileMode.CreateNew;
-						Directory.CreateDirectory(Path.GetDirectoryName(destination));
-						
-						if (File.Exists(destination)) {
-							fileMode = FileMode.Create;
-						}
-						using (var outputStream = new FileStream(destination, fileMode)) {
-							Bio.CopyStream(inputStream.BaseStream, outputStream, (int) fileEntry.size, false);
-						}
+						Action<Stream, Stream> copyFunction = (input, output) => input.Copy(output, (int) fileEntry.size);
+						inputStream.BaseStream.WriteToFile(destination, PROMPT_ID, copyFunction);
 					}
 					catch (Exception e) {
 						Bio.Error(e);
