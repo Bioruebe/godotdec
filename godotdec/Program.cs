@@ -8,7 +8,7 @@ using System.Text;
 
 namespace godotdec {
 	class Program {
-		private const string VERSION = "2.1.1";
+		private const string VERSION = "2.1.2";
 		private const string PROMPT_ID = "godotdec_overwrite";
 		private const int MAGIC = 0x43504447;
 
