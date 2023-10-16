@@ -1,0 +1,18 @@
+2.1.2
+  Updated BioLib to 2.5.0
+
+2.1.1
+  Changed minimum .NET Framework to 4
+  Updated BioLib to 2.0.0
+
+2.1.0
+  Added BioLib dependency
+  Changed minimum .NET Framework to 4.5
+
+2.0.0
+  Added support for bigger archives
+  Added command line parameter to convert certain file types after extraction
+  Fixed several extraction failures
+
+1.0.0
+  Initial release
