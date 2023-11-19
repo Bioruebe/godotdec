@@ -1,4 +1,4 @@
-using BioLib;
+﻿using BioLib;
 using BioLib.Streams;
 using System;
 using System.Collections.Generic;
@@ -132,7 +132,7 @@ namespace godotdec {
 
 					try {
 						Action<Stream, Stream> copyFunction = (input, output) => input.Copy(output, (int) fileEntry.size);
-						inputStream.BaseStream.WriteToFile(destination, PROMPT_ID, copyFunction);
+						inputStream.BaseStream.WriteToFileRelative(destination, PROMPT_ID, copyFunction);
 					}
 					catch (Exception e) {
 						Bio.Error(e);
