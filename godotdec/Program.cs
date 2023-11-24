@@ -41,7 +41,7 @@ namespace godotdec {
 				Bio.Cout($"Package format version: {packFormatVersion}");
 				Bio.Cout($"Godot Engine version: {inputStream.ReadInt32()}.{inputStream.ReadInt32()}.{inputStream.ReadInt32()}");
 
-				if (packFormatVersion == 1)
+				if (packFormatVersion <= 1)
 				{
 					// No special handling
 				}
