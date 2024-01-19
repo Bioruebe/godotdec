@@ -96,19 +96,20 @@ namespace godotdec {
 
 					// TODO: Only PNG compression is supported
 					if (convertAssets) {
+						var internalPath = fileEntry.path.ToLower();
 						// https://github.com/godotengine/godot/blob/master/editor/import/resource_importer_texture.cpp#L222
-						if (fileEntry.path.EndsWith(".stex") && fileEntry.path.Contains(".png")) {
+						if (internalPath.EndsWith(".stex")) {
 							fileEntry.Resize(32);
 							fileEntry.ChangeExtension(".stex", ".png");
 							Bio.Debug(fileEntry);
 						}
 						// https://github.com/godotengine/godot/blob/master/core/io/resource_format_binary.cpp#L836
-						else if (fileEntry.path.EndsWith(".oggstr")) {
+						else if (internalPath.EndsWith(".oggstr")) {
 							fileEntry.Resize(279, 4);
 							fileEntry.ChangeExtension(".oggstr", ".ogg");
 						}
 						// https://github.com/godotengine/godot/blob/master/scene/resources/audio_stream_sample.cpp#L518
-						else if (fileEntry.path.EndsWith(".sample")) {
+						else if (internalPath.EndsWith(".sample")) {
 							// TODO
 							Bio.Warn("The file type '.sample' is currently not supported");
 						}
