@@ -10,7 +10,7 @@ namespace godotdec {
 	class Program {
 		private const string VERSION = "2.1.2";
 		private const string PROMPT_ID = "godotdec_overwrite";
-		private const int MAGIC = 0x43504447;
+		private const int MAGIC_PACKAGE = 0x43504447;
 
 		private static string inputFile;
 		private static string outputDirectory;
@@ -25,7 +25,7 @@ namespace godotdec {
 
 			var failed = 0;
 			using (var inputStream = new BinaryReader(File.Open(inputFile, FileMode.Open))) {
-				if (inputStream.ReadInt32() != MAGIC) {
+				if (inputStream.ReadInt32() != MAGIC_PACKAGE) {
 					inputStream.BaseStream.Seek(-4, SeekOrigin.End);
 
 					CheckMagic(inputStream.ReadInt32());
@@ -41,26 +41,20 @@ namespace godotdec {
 				Bio.Cout($"Package format version: {packFormatVersion}");
 				Bio.Cout($"Godot Engine version: {inputStream.ReadInt32()}.{inputStream.ReadInt32()}.{inputStream.ReadInt32()}");
 
-				if (packFormatVersion <= 1)
-				{
+				if (packFormatVersion <= 1) {
 					// No special handling
 				}
-				else if (packFormatVersion == 2)
-				{
+				else if (packFormatVersion == 2) {
 					uint packFlags = inputStream.ReadUInt32();
 					if ((packFlags & 1) != 0) // PACK_DIR_ENCRYPTED
 						Bio.Error("Encrypted directory not supported.", Bio.EXITCODE.NOT_SUPPORTED);
-                }
-				else
-				{
-					Bio.Error("Package format version not supported.", Bio.EXITCODE.NOT_SUPPORTED);
+				}
+				else {
+					Bio.Error($"Package format version {packFormatVersion} is not supported.", Bio.EXITCODE.NOT_SUPPORTED);
 				}
 
-				long filesBase = 0;
-				if (packFormatVersion >= 2)
-				{
-					filesBase = inputStream.ReadInt64();
-				}
+				long filesBaseOffset = 0;
+				if (packFormatVersion >= 2) filesBaseOffset = inputStream.ReadInt64();
 
 				// Skip reserved bytes (16x Int32)
 				inputStream.BaseStream.Skip(16 * 4);
@@ -73,35 +67,28 @@ namespace godotdec {
 				for (var i = 0; i < fileCount; i++) {
 					var pathLength = inputStream.ReadInt32();
 					var path = Encoding.UTF8.GetString(inputStream.ReadBytes(pathLength));
-					var fileEntry = new FileEntry(path.ToString(), inputStream.ReadInt64(), inputStream.ReadInt64());
+					var fileEntry = new FileEntry(path.ToString(), inputStream.ReadInt64() + filesBaseOffset, inputStream.ReadInt64());
 					fileIndex.Add(fileEntry);
-					Bio.Debug(fileEntry);
+					//Bio.Debug(fileEntry);
 					inputStream.BaseStream.Skip(16);
-					if (packFormatVersion >= 2)
-					{
-						uint fileFlags = inputStream.ReadUInt32();
-						if ((fileFlags & 1) != 0)
-                            Bio.Error("Encrypted files not supported.", Bio.EXITCODE.NOT_SUPPORTED);
-                    }
-					//break;
+
+					if (packFormatVersion >= 2) {
+						var fileFlags = inputStream.ReadUInt32();
+						if ((fileFlags & 1) != 0) Bio.Error("Encrypted files not supported.", Bio.EXITCODE.NOT_SUPPORTED);
+					}
 				}
 
 				if (fileIndex.Count < 1) Bio.Error("No files were found inside the archive", Bio.EXITCODE.RUNTIME_ERROR);
 				fileIndex.Sort((a, b) => (int) (a.offset - b.offset));
 
-				var fileIndexEnd = inputStream.BaseStream.Position;
-				if (packFormatVersion >= 2)
-				{
-					foreach (var fileEntry in fileIndex)
-					{
-						fileEntry.offset += filesBase;
-					}
-				}
+				Bio.Cout("Extracting files...");
+				if (convertAssets) Bio.Cout("File conversion is enabled");
 
+				var fileIndexEnd = inputStream.BaseStream.Position;
 				for (var i = 0; i < fileIndex.Count; i++) {
 					var fileEntry = fileIndex[i];
 					Bio.Progress(fileEntry.path, i+1, fileIndex.Count);
-					//break;
+
 					if (fileEntry.offset < fileIndexEnd) {
 						Bio.Warn("Invalid file offset: " + fileEntry.offset);
 						continue;
@@ -160,7 +147,7 @@ namespace godotdec {
 		}
 
 		static void CheckMagic(int magic) {
-			if (magic == MAGIC) return;
+			if (magic == MAGIC_PACKAGE) return;
 			Bio.Error("The input file is not a valid Godot package file.", Bio.EXITCODE.INVALID_INPUT);
 		}
 	}
