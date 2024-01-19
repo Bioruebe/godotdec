@@ -11,6 +11,8 @@ namespace godotdec {
 		private const string VERSION = "2.1.2";
 		private const string PROMPT_ID = "godotdec_overwrite";
 		private const int MAGIC_PACKAGE = 0x43504447;
+		private const int TEXTURE_V1_FORMAT_BIT_PNG = 1 << 20;
+		private const int TEXTURE_V1_FORMAT_BIT_WEBP = 1 << 21;
 
 		private static string inputFile;
 		private static string outputDirectory;
@@ -97,11 +99,22 @@ namespace godotdec {
 					// TODO: Only PNG compression is supported
 					if (convertAssets) {
 						var internalPath = fileEntry.path.ToLower();
-						// https://github.com/godotengine/godot/blob/master/editor/import/resource_importer_texture.cpp#L222
+						inputStream.BaseStream.Position = fileEntry.offset;
+						// https://github.com/godotengine/godot/blob/3.5/scene/resources/texture.cpp#L464
 						if (internalPath.EndsWith(".stex")) {
+							inputStream.BaseStream.Skip(12);
+							var format = inputStream.ReadInt32();
+
+							if ((format & TEXTURE_V1_FORMAT_BIT_PNG) > 0) {
+								fileEntry.ChangeExtension(".stex", ".png");
+							}
+							else if ((format & TEXTURE_V1_FORMAT_BIT_WEBP) > 0) {
+								fileEntry.ChangeExtension(".stex", ".webp");
+							}
+							else {
+								Bio.Debug("Unknown texture format");
+							}
 							fileEntry.Resize(32);
-							fileEntry.ChangeExtension(".stex", ".png");
-							Bio.Debug(fileEntry);
 						}
 						// https://github.com/godotengine/godot/blob/master/core/io/resource_format_binary.cpp#L836
 						else if (internalPath.EndsWith(".oggstr")) {
