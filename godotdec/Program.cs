@@ -13,6 +13,8 @@ namespace godotdec {
 		private const int MAGIC_PACKAGE = 0x43504447;
 		private const int TEXTURE_V1_FORMAT_BIT_PNG = 1 << 20;
 		private const int TEXTURE_V1_FORMAT_BIT_WEBP = 1 << 21;
+		private const int TEXTURE_V2_FORMAT_BIT_PNG = 1;
+		private const int TEXTURE_V2_FORMAT_BIT_WEBP = 2;
 
 		private static string inputFile;
 		private static string outputDirectory;
@@ -115,6 +117,24 @@ namespace godotdec {
 								Bio.Debug("Unknown texture format");
 							}
 							fileEntry.Resize(32);
+						}
+						// https://github.com/godotengine/godot/blob/4.2/scene/resources/compressed_texture.cpp#L299
+						else if (internalPath.EndsWith(".ctex")) {
+							inputStream.BaseStream.Skip(36);
+							var format = inputStream.ReadInt32();
+							inputStream.BaseStream.Skip(16);
+
+							if (format == TEXTURE_V2_FORMAT_BIT_PNG) {
+								fileEntry.ChangeExtension(".ctex", ".png");
+							}
+							else if (format == TEXTURE_V2_FORMAT_BIT_WEBP) {
+								fileEntry.ChangeExtension(".ctex", ".webp");
+							}
+							else {
+								Bio.Debug("Unknown texture format");
+							}
+
+							fileEntry.Resize(56);
 						}
 						// https://github.com/godotengine/godot/blob/master/core/io/resource_format_binary.cpp#L836
 						else if (internalPath.EndsWith(".oggstr")) {
