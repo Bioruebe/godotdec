@@ -37,7 +37,30 @@ namespace godotdec {
 					CheckMagic(inputStream.ReadInt32());
 				}
 				
-				Bio.Cout($"Godot Engine version: {inputStream.ReadInt32()}.{inputStream.ReadInt32()}.{inputStream.ReadInt32()}.{inputStream.ReadInt32()}");
+				int packFormatVersion = inputStream.ReadInt32();
+				Bio.Cout($"Package format version: {packFormatVersion}");
+				Bio.Cout($"Godot Engine version: {inputStream.ReadInt32()}.{inputStream.ReadInt32()}.{inputStream.ReadInt32()}");
+
+				if (packFormatVersion <= 1)
+				{
+					// No special handling
+				}
+				else if (packFormatVersion == 2)
+				{
+					uint packFlags = inputStream.ReadUInt32();
+					if ((packFlags & 1) != 0) // PACK_DIR_ENCRYPTED
+						Bio.Error("Encrypted directory not supported.", Bio.EXITCODE.NOT_SUPPORTED);
+                }
+				else
+				{
+					Bio.Error("Package format version not supported.", Bio.EXITCODE.NOT_SUPPORTED);
+				}
+
+				long filesBase = 0;
+				if (packFormatVersion >= 2)
+				{
+					filesBase = inputStream.ReadInt64();
+				}
 
 				// Skip reserved bytes (16x Int32)
 				inputStream.BaseStream.Skip(16 * 4);
@@ -54,6 +77,12 @@ namespace godotdec {
 					fileIndex.Add(fileEntry);
 					Bio.Debug(fileEntry);
 					inputStream.BaseStream.Skip(16);
+					if (packFormatVersion >= 2)
+					{
+						uint fileFlags = inputStream.ReadUInt32();
+						if ((fileFlags & 1) != 0)
+                            Bio.Error("Encrypted files not supported.", Bio.EXITCODE.NOT_SUPPORTED);
+                    }
 					//break;
 				}
 
@@ -61,6 +90,14 @@ namespace godotdec {
 				fileIndex.Sort((a, b) => (int) (a.offset - b.offset));
 
 				var fileIndexEnd = inputStream.BaseStream.Position;
+				if (packFormatVersion >= 2)
+				{
+					foreach (var fileEntry in fileIndex)
+					{
+						fileEntry.offset += filesBase;
+					}
+				}
+
 				for (var i = 0; i < fileIndex.Count; i++) {
 					var fileEntry = fileIndex[i];
 					Bio.Progress(fileEntry.path, i+1, fileIndex.Count);
@@ -95,7 +132,7 @@ namespace godotdec {
 
 					try {
 						Action<Stream, Stream> copyFunction = (input, output) => input.Copy(output, (int) fileEntry.size);
-						inputStream.BaseStream.WriteToFile(destination, PROMPT_ID, copyFunction);
+						inputStream.BaseStream.WriteToFileRelative(destination, PROMPT_ID, copyFunction);
 					}
 					catch (Exception e) {
 						Bio.Error(e);
