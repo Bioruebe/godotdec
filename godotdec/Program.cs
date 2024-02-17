@@ -317,17 +317,18 @@ namespace godotdec {
 				return false;
 			}
 
-			if (!serializedObject.properties.TryGetValue("data", out dynamic dataRaw)) {
+			var props = serializedObject.properties;
+			if (!props.TryGetValue("data", out dynamic dataRaw)) {
 				Bio.Warn("Failed to get audio data, conversion not possible");
 				return false;
 			}
 
-			serializedObject.properties.TryGetValue("stereo", out dynamic stereo);
+			props.TryGetValue("stereo", out dynamic stereo);
 			var data = (MemoryStream) dataRaw;
 			var subChunk2Size = (int) data.Length;
 			var channels = (stereo ?? false)? 2: 1;
-			var formatCode = (WavFormat) serializedObject.properties["format"];
-			var sampleRate = (int) serializedObject.properties["mix_rate"];
+			var formatCode = (WavFormat) props["format"];
+			var sampleRate = props.TryGetValue("mix_rate", out var sampleRateRaw)? (int) sampleRateRaw: 44100;
 			var bytesPerSample = formatCode == WavFormat.FORMAT_8_BITS? 1: formatCode == WavFormat.FORMAT_16_BITS? 2: 4;
 
 			fileEntry.ChangeExtension(".sample", ".wav");
