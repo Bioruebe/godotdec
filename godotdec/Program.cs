@@ -14,8 +14,6 @@ namespace godotdec {
 		private const int MAGIC_RSRC = 0x43525352;
 		private const int TEXTURE_V1_FORMAT_BIT_PNG = 1 << 20;
 		private const int TEXTURE_V1_FORMAT_BIT_WEBP = 1 << 21;
-		private const int TEXTURE_V2_FORMAT_BIT_PNG = 1;
-		private const int TEXTURE_V2_FORMAT_BIT_WEBP = 2;
 
 		private static string inputFile;
 		private static string outputDirectory;
@@ -167,17 +165,17 @@ namespace godotdec {
 			// https://github.com/godotengine/godot/blob/4.2/scene/resources/compressed_texture.cpp#L299
 			else if (internalPath.EndsWith(".ctex")) {
 				binaryReader.BaseStream.Skip(36);
-				var format = binaryReader.ReadInt32();
+				var format = (TextureFormat) binaryReader.ReadInt32();
 				binaryReader.BaseStream.Skip(16);
 
-				if (format == TEXTURE_V2_FORMAT_BIT_PNG) {
+				if (format == TextureFormat.PNG) {
 					fileEntry.ChangeExtension(".ctex", ".png");
 				}
-				else if (format == TEXTURE_V2_FORMAT_BIT_WEBP) {
+				else if (format == TextureFormat.WEBP) {
 					fileEntry.ChangeExtension(".ctex", ".webp");
 				}
 				else {
-					Bio.Debug("Unknown texture format");
+					Bio.Debug("Unsupported texture format: " + format);
 				}
 
 				fileEntry.Resize(56);
@@ -402,6 +400,13 @@ enum Variant {
 	RAW_ARRAY = 31,
 	PACKED_INT64_ARRAY = 48
 }
+
+enum TextureFormat {
+	IMAGE,
+	PNG,
+	WEBP,
+	BASIS_UNIVERSAL
+};
 
 enum WavFormat {
 	FORMAT_8_BITS,
