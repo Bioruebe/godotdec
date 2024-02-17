@@ -256,26 +256,55 @@ namespace godotdec {
 			var properties = new Dictionary<string, dynamic>();
 			for (var i = 0; i < propertyCount; i++) {
 				var nameIndex = binaryReader.ReadInt32();
-				var propertyType = (Variant) binaryReader.ReadInt32();
-
-				dynamic value = null;
-				switch (propertyType) {
-					case Variant.NIL:
-						break;
-					case Variant.VARIANT_RAW_ARRAY:
-						var size = binaryReader.ReadInt32();
-						value = binaryReader.BaseStream.Extract(size);
-						break;
-					case Variant.INT:
-						value = binaryReader.ReadInt32();
-						break;
-				}
+				dynamic value = ParseVariant(binaryReader);
 
 				properties.Add(stringTable[nameIndex], value);
 			}
 
 			Bio.Debug(properties);
 			return new SerializedObject(name, properties);
+		}
+
+		static dynamic ParseVariant(BinaryReader binaryReader) {
+			var variantType = (Variant) binaryReader.ReadInt32();
+			dynamic value = null;
+			//Bio.Debug($"Variant {variantType} @ {binaryReader.BaseStream.Position}");
+
+			switch (variantType) {
+				case Variant.NIL:
+					break;
+				case Variant.INT:
+					value = binaryReader.ReadInt32();
+					break;
+				case Variant.FLOAT:
+					value = binaryReader.ReadSingle();
+					break;
+				case Variant.RAW_ARRAY: {
+					var size = binaryReader.ReadInt32();
+					value = binaryReader.BaseStream.Extract(size);
+					var padding = 4 - (size % 4);
+					if (padding < 4) binaryReader.BaseStream.Skip(padding);
+					break;
+				}
+				case Variant.ARRAY: {
+					var size = Math.Abs(binaryReader.ReadInt32());
+					value = new dynamic[size];
+					for (var i = 0; i < size; i++) {
+						value[i] = ParseVariant(binaryReader);
+					}
+					break;
+				}
+				case Variant.PACKED_INT64_ARRAY: {
+					var size = binaryReader.ReadInt32();
+					value = binaryReader.BaseStream.Extract(size * 8);
+					break;
+				}
+				default:
+					Bio.Warn($"Unsupported variant {variantType} in serialized file, conversion is not possible");
+					break;
+			}
+
+			return value;
 		}
 
 		static bool ExtractWav(SerializedObject serializedObject, FileEntry fileEntry) {
@@ -363,7 +392,10 @@ enum Variant {
 	NIL = 1,
 	BOOL = 2,
 	INT = 3,
-	VARIANT_RAW_ARRAY = 31
+	FLOAT = 4,
+	ARRAY = 30,
+	RAW_ARRAY = 31,
+	PACKED_INT64_ARRAY = 48
 }
 
 enum WavFormat {
