@@ -310,8 +310,8 @@ namespace godotdec {
 		}
 
 		static bool ExtractWav(SerializedObject serializedObject, FileEntry fileEntry) {
-			if (serializedObject.name != "AudioStreamWAV") {
-				Bio.Warn("Resource is not AudioStreamWAV, conversion not possible");
+			if (serializedObject.name != "AudioStreamWAV" && serializedObject.name != "AudioStreamSample") {
+				Bio.Warn("Resource is not AudioStreamWAV or AudioStreamSample, conversion not possible");
 				return false;
 			}
 
