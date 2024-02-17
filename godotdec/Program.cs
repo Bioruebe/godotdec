@@ -8,7 +8,7 @@ using System.Text;
 
 namespace godotdec {
 	class Program {
-		private const string VERSION = "2.1.2";
+		private const string VERSION = "3.0.0";
 		private const string PROMPT_ID = "godotdec_overwrite";
 		private const int MAGIC_PACKAGE = 0x43504447;
 		private const int MAGIC_RSRC = 0x43525352;
@@ -22,14 +22,14 @@ namespace godotdec {
 		private static bool convertAssets;
 
 		static void Main(string[] args) {
-			Bio.Header("godotdec", VERSION, "2018-2020", "A simple unpacker for Godot Engine package files (.pck|.exe)",
+			Bio.Header("godotdec", VERSION, "2018-2024", "A simple unpacker for Godot Engine package files (.pck|.exe)",
 				"[<options>] <input_file> [<output_directory>]\n\nOptions:\n-c\t--convert\tConvert textures and audio files");
 
 			if (Bio.HasCommandlineSwitchHelp(args)) return;
 			ParseCommandLine(args.ToList());
 
 			var failed = 0;
-			using (var inputStream = new BinaryReader(File.Open(inputFile, FileMode.Open))) {
+			using (var inputStream = new BinaryReader(Bio.FileOpen(inputFile, FileMode.Open, FileAccess.Read))) {
 				if (inputStream.ReadInt32() != MAGIC_PACKAGE) {
 					inputStream.BaseStream.Seek(-4, SeekOrigin.End);
 
@@ -119,7 +119,6 @@ namespace godotdec {
 			Bio.Cout(failed < 1? "All OK": failed + " files failed to extract");
 			Bio.Pause();
 		}
-
 		static string GetOutputPath(FileEntry fileEntry) {
 			return Path.Combine(outputDirectory, fileEntry.path);
 		}
@@ -188,6 +187,11 @@ namespace godotdec {
 				fileEntry.Resize(279, 4);
 				fileEntry.ChangeExtension(".oggstr", ".ogg");
 			}
+			//else if (internalPath.EndsWith(".oggvorbisstr")) {
+			//	var properties = ParseResource(binaryReader, fileEntry);
+			//	if (properties == null) return false;
+			//	return ExtractOgg(properties, fileEntry);
+			//}
 			// https://github.com/godotengine/godot/blob/3.5/scene/resources/audio_stream_sample.cpp#L552
 			else if (internalPath.EndsWith(".sample")) {
 				var properties = ParseResource(binaryReader, fileEntry);
