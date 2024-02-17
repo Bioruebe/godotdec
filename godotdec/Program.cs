@@ -12,6 +12,7 @@ namespace godotdec {
 		private const string PROMPT_ID = "godotdec_overwrite";
 		private const int MAGIC_PACKAGE = 0x43504447;
 		private const int MAGIC_RSRC = 0x43525352;
+		private const int MAGIC_WEBP = 0x50424557;
 		private const int TEXTURE_V1_FORMAT_BIT_PNG = 1 << 20;
 		private const int TEXTURE_V1_FORMAT_BIT_WEBP = 1 << 21;
 
@@ -157,7 +158,11 @@ namespace godotdec {
 					fileEntry.ChangeExtension(".stex", ".webp");
 				}
 				else {
+					// Guess based on file magic
 					Bio.Debug("Unknown texture format");
+					binaryReader.BaseStream.Skip(12);
+					var magic = binaryReader.ReadInt32();
+					fileEntry.ChangeExtension(".stex", magic == MAGIC_WEBP? ".webp": ".png");
 				}
 
 				fileEntry.Resize(32);
