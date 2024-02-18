@@ -280,6 +280,9 @@ namespace godotdec {
 			switch (variantType) {
 				case Variant.NIL:
 					break;
+				case Variant.BOOL:
+					value = binaryReader.ReadInt32() != 0;
+					break;
 				case Variant.INT:
 					value = binaryReader.ReadInt32();
 					break;
@@ -301,6 +304,9 @@ namespace godotdec {
 					}
 					break;
 				}
+				case Variant.INT64:
+					value = binaryReader.ReadInt64();
+					break;
 				case Variant.PACKED_INT64_ARRAY: {
 					var size = binaryReader.ReadInt32();
 					value = binaryReader.BaseStream.Extract(size * 8);
@@ -403,6 +409,7 @@ enum Variant {
 	FLOAT = 4,
 	ARRAY = 30,
 	RAW_ARRAY = 31,
+	INT64 = 40,
 	PACKED_INT64_ARRAY = 48
 }
 
